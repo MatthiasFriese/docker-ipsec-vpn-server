@@ -87,104 +87,28 @@ VPN_USER=$(nospaces "$VPN_USER")
 VPN_USER=$(noquotes "$VPN_USER")
 VPN_PASSWORD=$(nospaces "$VPN_PASSWORD")
 VPN_PASSWORD=$(noquotes "$VPN_PASSWORD")
-
-if [ -n "$VPN_ADDL_USERS" ] && [ -n "$VPN_ADDL_PASSWORDS" ]; then
-  VPN_ADDL_USERS=$(nospaces "$VPN_ADDL_USERS")
-  VPN_ADDL_USERS=$(noquotes "$VPN_ADDL_USERS")
-  VPN_ADDL_USERS=$(onespace "$VPN_ADDL_USERS")
-  VPN_ADDL_USERS=$(noquotes2 "$VPN_ADDL_USERS")
-  VPN_ADDL_PASSWORDS=$(nospaces "$VPN_ADDL_PASSWORDS")
-  VPN_ADDL_PASSWORDS=$(noquotes "$VPN_ADDL_PASSWORDS")
-  VPN_ADDL_PASSWORDS=$(onespace "$VPN_ADDL_PASSWORDS")
-  VPN_ADDL_PASSWORDS=$(noquotes2 "$VPN_ADDL_PASSWORDS")
-else
-  VPN_ADDL_USERS=""
-  VPN_ADDL_PASSWORDS=""
-fi
-
-if [ -n "$VPN_DNS_SRV1" ]; then
-  VPN_DNS_SRV1=$(nospaces "$VPN_DNS_SRV1")
-  VPN_DNS_SRV1=$(noquotes "$VPN_DNS_SRV1")
-fi
-
-if [ -n "$VPN_DNS_SRV2" ]; then
-  VPN_DNS_SRV2=$(nospaces "$VPN_DNS_SRV2")
-  VPN_DNS_SRV2=$(noquotes "$VPN_DNS_SRV2")
-fi
-
-if [ -n "$VPN_PUBLIC_IP" ]; then
-  VPN_PUBLIC_IP=$(nospaces "$VPN_PUBLIC_IP")
-  VPN_PUBLIC_IP=$(noquotes "$VPN_PUBLIC_IP")
-fi
+VPN_LEFT_NAME=$(nospaces "$VPN_LEFT_NAME")
+VPN_LEFT_NAME=$(noquotes "$VPN_LEFT_NAME")
+VPN_LEFT_IP_SUBNET=$(nospaces "$VPN_LEFT_IP_SUBNET")
+VPN_LEFT_IP_SUBNET=$(noquotes "$VPN_LEFT_IP_SUBNET")
+VPN_RIGHT_NAME=$(nospaces "$VPN_RIGHT_NAME")
+VPN_RIGHT_NAME=$(noquotes "$VPN_RIGHT_NAME")
+VPN_RIGHT_IP_SUBNET=$(nospaces "$VPN_RIGHT_IP_SUBNET")
+VPN_RIGHT_IP_SUBNET=$(noquotes "$VPN_RIGHT_IP_SUBNET")
 
 if [ -z "$VPN_IPSEC_PSK" ] || [ -z "$VPN_USER" ] || [ -z "$VPN_PASSWORD" ]; then
   exiterr "All VPN credentials must be specified. Edit your 'env' file and re-enter them."
 fi
 
-if printf '%s' "$VPN_IPSEC_PSK $VPN_USER $VPN_PASSWORD $VPN_ADDL_USERS $VPN_ADDL_PASSWORDS" | LC_ALL=C grep -q '[^ -~]\+'; then
+if printf '%s' "$VPN_IPSEC_PSK $VPN_USER $VPN_PASSWORD" | LC_ALL=C grep -q '[^ -~]\+'; then
   exiterr "VPN credentials must not contain non-ASCII characters."
 fi
 
-case "$VPN_IPSEC_PSK $VPN_USER $VPN_PASSWORD $VPN_ADDL_USERS $VPN_ADDL_PASSWORDS" in
+case "$VPN_IPSEC_PSK $VPN_USER $VPN_PASSWORD" in
   *[\\\"\']*)
     exiterr "VPN credentials must not contain these special characters: \\ \" '"
     ;;
 esac
-
-if printf '%s' "$VPN_USER $VPN_ADDL_USERS" | tr ' ' '\n' | sort | uniq -c | grep -qv '^ *1 '; then
-  exiterr "VPN usernames must not contain duplicates."
-fi
-
-# Check DNS servers and try to resolve hostnames to IPs
-if [ -n "$VPN_DNS_SRV1" ]; then
-  check_ip "$VPN_DNS_SRV1" || VPN_DNS_SRV1=$(dig -t A -4 +short "$VPN_DNS_SRV1")
-  if ! check_ip "$VPN_DNS_SRV1"; then
-    echo >&2
-    echo "Error: Invalid DNS server. Check VPN_DNS_SRV1 in your 'env' file." >&2
-    VPN_DNS_SRV1=""
-  fi
-fi
-
-if [ -n "$VPN_DNS_SRV2" ]; then
-  check_ip "$VPN_DNS_SRV2" || VPN_DNS_SRV2=$(dig -t A -4 +short "$VPN_DNS_SRV2")
-  if ! check_ip "$VPN_DNS_SRV2"; then
-    echo >&2
-    echo "Error: Invalid DNS server. Check VPN_DNS_SRV2 in your 'env' file." >&2
-    VPN_DNS_SRV2=""
-  fi
-fi
-
-echo
-echo 'Trying to auto discover IP of this server...'
-
-# In case auto IP discovery fails, manually define the public IP
-# of this server in your 'env' file, as variable 'VPN_PUBLIC_IP'.
-PUBLIC_IP=${VPN_PUBLIC_IP:-''}
-
-# Try to auto discover IP of this server
-[ -z "$PUBLIC_IP" ] && PUBLIC_IP=$(dig @resolver1.opendns.com -t A -4 myip.opendns.com +short)
-
-# Check IP for correct format
-check_ip "$PUBLIC_IP" || PUBLIC_IP=$(wget -t 3 -T 15 -qO- http://ipv4.icanhazip.com)
-check_ip "$PUBLIC_IP" || exiterr "Cannot detect this server's public IP. Define it in your 'env' file as 'VPN_PUBLIC_IP'."
-
-L2TP_NET=${VPN_L2TP_NET:-'192.168.42.0/24'}
-L2TP_LOCAL=${VPN_L2TP_LOCAL:-'192.168.42.1'}
-L2TP_POOL=${VPN_L2TP_POOL:-'192.168.42.10-192.168.42.250'}
-XAUTH_NET=${VPN_XAUTH_NET:-'192.168.43.0/24'}
-XAUTH_POOL=${VPN_XAUTH_POOL:-'192.168.43.10-192.168.43.250'}
-DNS_SRV1=${VPN_DNS_SRV1:-'8.8.8.8'}
-DNS_SRV2=${VPN_DNS_SRV2:-'8.8.4.4'}
-DNS_SRVS="\"$DNS_SRV1 $DNS_SRV2\""
-[ -n "$VPN_DNS_SRV1" ] && [ -z "$VPN_DNS_SRV2" ] && DNS_SRVS="$DNS_SRV1"
-
-if [ -n "$VPN_DNS_SRV1" ] && [ -n "$VPN_DNS_SRV2" ]; then
-  echo
-  echo "Setting DNS servers to $VPN_DNS_SRV1 and $VPN_DNS_SRV2..."
-elif [ -n "$VPN_DNS_SRV1" ]; then
-  echo
-  echo "Setting DNS server to $VPN_DNS_SRV1..."
-fi
 
 case $VPN_SHA2_TRUNCBUG in
   [yY][eE][sS])
@@ -202,50 +126,27 @@ cat > /etc/ipsec.conf <<EOF
 version 2.0
 
 config setup
-  virtual-private=%v4:10.0.0.0/8,%v4:192.168.0.0/16,%v4:172.16.0.0/12,%v4:!$L2TP_NET,%v4:!$XAUTH_NET
-  protostack=netkey
-  interfaces=%defaultroute
-  uniqueids=no
+    charondebug="all"
+    uniqueids=yes
 
-conn shared
-  left=%defaultroute
-  leftid=$PUBLIC_IP
-  right=%any
-  encapsulation=yes
-  authby=secret
-  pfs=no
-  rekey=no
-  keyingtries=5
-  dpddelay=30
-  dpdtimeout=120
-  dpdaction=clear
-  ikev2=never
-  ike=aes256-sha2,aes128-sha2,aes256-sha1,aes128-sha1,aes256-sha2;modp1024,aes128-sha1;modp1024
-  phase2alg=aes_gcm-null,aes128-sha1,aes256-sha1,aes256-sha2_512,aes128-sha2,aes256-sha2
-  sha2-truncbug=$SHA2_TRUNCBUG
-
-conn l2tp-psk
-  auto=add
-  leftprotoport=17/1701
-  rightprotoport=17/%any
-  type=transport
-  phase2=esp
-  also=shared
-
-conn xauth-psk
-  auto=add
-  leftsubnet=0.0.0.0/0
-  rightaddresspool=$XAUTH_POOL
-  modecfgdns=$DNS_SRVS
-  leftxauthserver=yes
-  rightxauthclient=yes
-  leftmodecfgserver=yes
-  rightmodecfgclient=yes
-  modecfgpull=yes
-  xauthby=file
-  fragmentation=yes
-  cisco-unity=yes
-  also=shared
+conn devgateway-to-prodgateway
+    type=tunnel
+    auto=start
+    keyexchange=ikev2
+    authby=secret
+    left=$VPN_LEFT_NAME
+    leftsubnet=$VPN_LEFT_IP_SUBNET/24
+    right=$VPN_RIGHT_NAME
+    rightsubnet=$VPN_RIGHT_IP_SUBNET/24
+    ike=aes256-sha1-modp1024!
+    esp=aes256-sha1!
+    aggressive=yes
+    keyingtries=%forever
+    ikelifetime=28800s
+    lifetime=3600s
+    dpddelay=30s
+    dpdtimeout=120s
+    dpdaction=restart
 
 include /etc/ipsec.d/*.conf
 EOF
@@ -264,70 +165,46 @@ cat > /etc/ipsec.secrets <<EOF
 EOF
 
 # Create xl2tpd config
-cat > /etc/xl2tpd/xl2tpd.conf <<EOF
-[global]
-port = 1701
+#cat > /etc/xl2tpd/xl2tpd.conf <<EOF
+#[global]
+#port = 1701
 
-[lns default]
-ip range = $L2TP_POOL
-local ip = $L2TP_LOCAL
-require chap = yes
-refuse pap = yes
-require authentication = yes
-name = l2tpd
-pppoptfile = /etc/ppp/options.xl2tpd
-length bit = yes
-EOF
+#[lns default]
+#ip range = $L2TP_POOL
+#local ip = $L2TP_LOCAL
+#require chap = yes
+#refuse pap = yes
+#require authentication = yes
+#name = l2tpd
+#pppoptfile = /etc/ppp/options.xl2tpd
+#length bit = yes
+#EOF
 
 # Set xl2tpd options
-cat > /etc/ppp/options.xl2tpd <<EOF
-+mschap-v2
-ipcp-accept-local
-ipcp-accept-remote
-noccp
-auth
-mtu 1280
-mru 1280
-proxyarp
-lcp-echo-failure 4
-lcp-echo-interval 30
-connect-delay 5000
-ms-dns $DNS_SRV1
-EOF
-
-if [ -z "$VPN_DNS_SRV1" ] || [ -n "$VPN_DNS_SRV2" ]; then
-cat >> /etc/ppp/options.xl2tpd <<EOF
-ms-dns $DNS_SRV2
-EOF
-fi
+#cat > /etc/ppp/options.xl2tpd <<EOF
+#+mschap-v2
+#ipcp-accept-local
+#ipcp-accept-remote
+#noccp
+#auth
+#mtu 1280
+#mru 1280
+#proxyarp
+#lcp-echo-failure 4
+#lcp-echo-interval 30
+#connect-delay 5000
+#ms-dns $DNS_SRV1
+#EOF
 
 # Create VPN credentials
-cat > /etc/ppp/chap-secrets <<EOF
-"$VPN_USER" l2tpd "$VPN_PASSWORD" *
-EOF
+#cat > /etc/ppp/chap-secrets <<EOF
+#"$VPN_USER" l2tpd "$VPN_PASSWORD" *
+#EOF
 
 VPN_PASSWORD_ENC=$(openssl passwd -1 "$VPN_PASSWORD")
 cat > /etc/ipsec.d/passwd <<EOF
 $VPN_USER:$VPN_PASSWORD_ENC:xauth-psk
 EOF
-
-if [ -n "$VPN_ADDL_USERS" ] && [ -n "$VPN_ADDL_PASSWORDS" ]; then
-  count=1
-  addl_user=$(printf '%s' "$VPN_ADDL_USERS" | cut -d ' ' -f 1)
-  addl_password=$(printf '%s' "$VPN_ADDL_PASSWORDS" | cut -d ' ' -f 1)
-  while [ -n "$addl_user" ] && [ -n "$addl_password" ]; do
-    addl_password_enc=$(openssl passwd -1 "$addl_password")
-cat >> /etc/ppp/chap-secrets <<EOF
-"$addl_user" l2tpd "$addl_password" *
-EOF
-cat >> /etc/ipsec.d/passwd <<EOF
-$addl_user:$addl_password_enc:xauth-psk
-EOF
-    count=$((count+1))
-    addl_user=$(printf '%s' "$VPN_ADDL_USERS" | cut -s -d ' ' -f "$count")
-    addl_password=$(printf '%s' "$VPN_ADDL_PASSWORDS" | cut -s -d ' ' -f "$count")
-  done
-fi
 
 # Update sysctl settings
 SYST='/sbin/sysctl -e -q -w'
@@ -380,7 +257,7 @@ case $VPN_ANDROID_MTU_FIX in
 esac
 
 # Update file attributes
-chmod 600 /etc/ipsec.secrets /etc/ppp/chap-secrets /etc/ipsec.d/passwd
+chmod 600 /etc/ipsec.secrets /etc/ipsec.d/passwd
 
 # Check for new Libreswan version
 swan_ver_ts="/opt/src/swan_ver_ts"
@@ -455,4 +332,4 @@ mkdir -p /run/pluto /var/run/pluto /var/run/xl2tpd
 rm -f /run/pluto/pluto.pid /var/run/pluto/pluto.pid /var/run/xl2tpd.pid
 
 /usr/local/sbin/ipsec start
-exec /usr/sbin/xl2tpd -D -c /etc/xl2tpd/xl2tpd.conf
+#exec /usr/sbin/xl2tpd -D -c /etc/xl2tpd/xl2tpd.conf
