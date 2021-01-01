@@ -4,16 +4,16 @@ ARG BUILD_DATE
 ARG VERSION
 ARG VCS_REF
 
-LABEL maintainer="Lin Song <linsongui@gmail.com>" \
+LABEL maintainer="Matthias Friese <docker@matthias-friese.de>" \
     org.opencontainers.image.created="$BUILD_DATE" \
     org.opencontainers.image.version="$VERSION" \
     org.opencontainers.image.revision="$VCS_REF" \
-    org.opencontainers.image.authors="Lin Song <linsongui@gmail.com>" \
+    org.opencontainers.image.authors="Matthias Friese <docker@matthias-friese.de>" \
     org.opencontainers.image.title="IPsec VPN Server on Docker" \
     org.opencontainers.image.description="Docker image to run an IPsec VPN server, with both IPsec/L2TP and Cisco IPsec." \
-    org.opencontainers.image.url="https://github.com/hwdsl2/docker-ipsec-vpn-server" \
-    org.opencontainers.image.source="https://github.com/hwdsl2/docker-ipsec-vpn-server" \
-    org.opencontainers.image.documentation="https://github.com/hwdsl2/docker-ipsec-vpn-server"
+    org.opencontainers.image.url="https://github.com/friesema/docker-ipsec-vpn-server" \
+    org.opencontainers.image.source="https://github.com/friesema/docker-ipsec-vpn-server" \
+    org.opencontainers.image.documentation="https://github.com/friesema/docker-ipsec-vpn-server"
 
 ENV REFRESHED_AT 2020-11-10
 ENV SWAN_VER 4.1
