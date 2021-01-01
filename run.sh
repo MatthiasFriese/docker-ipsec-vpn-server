@@ -135,9 +135,9 @@ conn devgateway-to-prodgateway
     keyexchange=ikev2
     authby=secret
     left=$VPN_LEFT_NAME
-    leftsubnet=$VPN_LEFT_IP_SUBNET/24
+    leftsubnet=$VPN_LEFT_IP_SUBNET
     right=$VPN_RIGHT_NAME
-    rightsubnet=$VPN_RIGHT_IP_SUBNET/24
+    rightsubnet=$VPN_RIGHT_IP_SUBNET
     ike=aes256-sha1-modp1024!
     esp=aes256-sha1!
     aggressive=yes
