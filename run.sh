@@ -126,27 +126,18 @@ cat > /etc/ipsec.conf <<EOF
 version 2.0
 
 config setup
-    charondebug="all"
-    uniqueids=yes
+    protostack=netkey
 
-conn devgateway-to-prodgateway
-    type=tunnel
-    auto=start
-    keyexchange=ikev2
-    authby=secret
+conn mysubnet
+     also=mytunnel
+     leftsubnet=$VPN_LEFT_IP_SUBNET
+     rightsubnet=$VPN_RIGHT_IP_SUBNET
+     auto=start
+
+conn mytunnel
     left=$VPN_LEFT_NAME
-    leftsubnet=$VPN_LEFT_IP_SUBNET
     right=$VPN_RIGHT_NAME
-    rightsubnet=$VPN_RIGHT_IP_SUBNET
-    ike=aes256-sha1-modp1024!
-    esp=aes256-sha1!
-    aggressive=yes
-    keyingtries=%forever
-    ikelifetime=28800s
-    lifetime=3600s
-    dpddelay=30s
-    dpdtimeout=120s
-    dpdaction=restart
+    authby=secret
 
 include /etc/ipsec.d/*.conf
 EOF
@@ -221,26 +212,26 @@ $SYST "net.ipv4.conf.$NET_IFACE.send_redirects=0" 2>/dev/null
 $SYST "net.ipv4.conf.$NET_IFACE.rp_filter=0" 2>/dev/null
 
 # Create IPTables rules
-if ! iptables -t nat -C POSTROUTING -s "$L2TP_NET" -o "$NET_IFACE" -j MASQUERADE 2>/dev/null; then
-  iptables -I INPUT 1 -p udp --dport 1701 -m policy --dir in --pol none -j DROP
-  iptables -I INPUT 2 -m conntrack --ctstate INVALID -j DROP
-  iptables -I INPUT 3 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-  iptables -I INPUT 4 -p udp -m multiport --dports 500,4500 -j ACCEPT
-  iptables -I INPUT 5 -p udp --dport 1701 -m policy --dir in --pol ipsec -j ACCEPT
-  iptables -I INPUT 6 -p udp --dport 1701 -j DROP
-  iptables -I FORWARD 1 -m conntrack --ctstate INVALID -j DROP
-  iptables -I FORWARD 2 -i "$NET_IFACE" -o ppp+ -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-  iptables -I FORWARD 3 -i ppp+ -o "$NET_IFACE" -j ACCEPT
-  iptables -I FORWARD 4 -i ppp+ -o ppp+ -s "$L2TP_NET" -d "$L2TP_NET" -j ACCEPT
-  iptables -I FORWARD 5 -i "$NET_IFACE" -d "$XAUTH_NET" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-  iptables -I FORWARD 6 -s "$XAUTH_NET" -o "$NET_IFACE" -j ACCEPT
+#if ! iptables -t nat -C POSTROUTING -s "$L2TP_NET" -o "$NET_IFACE" -j MASQUERADE 2>/dev/null; then
+#  iptables -I INPUT 1 -p udp --dport 1701 -m policy --dir in --pol none -j DROP
+#  iptables -I INPUT 2 -m conntrack --ctstate INVALID -j DROP
+#  iptables -I INPUT 3 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+#  iptables -I INPUT 4 -p udp -m multiport --dports 500,4500 -j ACCEPT
+#  iptables -I INPUT 5 -p udp --dport 1701 -m policy --dir in --pol ipsec -j ACCEPT
+#  iptables -I INPUT 6 -p udp --dport 1701 -j DROP
+#  iptables -I FORWARD 1 -m conntrack --ctstate INVALID -j DROP
+#  iptables -I FORWARD 2 -i "$NET_IFACE" -o ppp+ -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+#  iptables -I FORWARD 3 -i ppp+ -o "$NET_IFACE" -j ACCEPT
+#  iptables -I FORWARD 4 -i ppp+ -o ppp+ -s "$L2TP_NET" -d "$L2TP_NET" -j ACCEPT
+#  iptables -I FORWARD 5 -i "$NET_IFACE" -d "$XAUTH_NET" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+#  iptables -I FORWARD 6 -s "$XAUTH_NET" -o "$NET_IFACE" -j ACCEPT
   # Uncomment to disallow traffic between VPN clients
   # iptables -I FORWARD 2 -i ppp+ -o ppp+ -s "$L2TP_NET" -d "$L2TP_NET" -j DROP
   # iptables -I FORWARD 3 -s "$XAUTH_NET" -d "$XAUTH_NET" -j DROP
-  iptables -A FORWARD -j DROP
-  iptables -t nat -I POSTROUTING -s "$XAUTH_NET" -o "$NET_IFACE" -m policy --dir out --pol none -j MASQUERADE
-  iptables -t nat -I POSTROUTING -s "$L2TP_NET" -o "$NET_IFACE" -j MASQUERADE
-fi
+#  iptables -A FORWARD -j DROP
+#  iptables -t nat -I POSTROUTING -s "$XAUTH_NET" -o "$NET_IFACE" -m policy --dir out --pol none -j MASQUERADE
+#  iptables -t nat -I POSTROUTING -s "$L2TP_NET" -o "$NET_IFACE" -j MASQUERADE
+#fi
 
 case $VPN_ANDROID_MTU_FIX in
   [yY][eE][sS])
