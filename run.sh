@@ -322,5 +322,5 @@ EOF
 mkdir -p /run/pluto /var/run/pluto /var/run/xl2tpd
 rm -f /run/pluto/pluto.pid /var/run/pluto/pluto.pid /var/run/xl2tpd.pid
 
-exec /usr/local/sbin/ipsec start -D
-#exec /usr/sbin/xl2tpd -D -c /etc/xl2tpd/xl2tpd.conf
+/usr/local/sbin/ipsec start
+/usr/local/sbin/ipsec up mytunnel
