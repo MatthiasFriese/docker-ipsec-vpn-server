@@ -156,46 +156,46 @@ cat > /etc/ipsec.secrets <<EOF
 EOF
 
 # Create xl2tpd config
-cat > /etc/xl2tpd/xl2tpd.conf <<EOF
-[global]
-port = 1701
+#cat > /etc/xl2tpd/xl2tpd.conf <<EOF
+#[global]
+#port = 1701
 
-[lns default]
-ip range = $L2TP_POOL
-local ip = $L2TP_LOCAL
-require chap = yes
-refuse pap = yes
-require authentication = yes
-name = l2tpd
-pppoptfile = /etc/ppp/options.xl2tpd
-length bit = yes
-EOF
+#[lns default]
+#ip range = $L2TP_POOL
+#local ip = $L2TP_LOCAL
+#require chap = yes
+#refuse pap = yes
+#require authentication = yes
+#name = l2tpd
+#pppoptfile = /etc/ppp/options.xl2tpd
+#length bit = yes
+#EOF
 
 # Set xl2tpd options
-cat > /etc/ppp/options.xl2tpd <<EOF
-+mschap-v2
-ipcp-accept-local
-ipcp-accept-remote
-noccp
-auth
-mtu 1280
-mru 1280
-proxyarp
-lcp-echo-failure 4
-lcp-echo-interval 30
-connect-delay 5000
-ms-dns $DNS_SRV1
-EOF
+#cat > /etc/ppp/options.xl2tpd <<EOF
+#+mschap-v2
+#ipcp-accept-local
+#ipcp-accept-remote
+#noccp
+#auth
+#mtu 1280
+#mru 1280
+#proxyarp
+#lcp-echo-failure 4
+#lcp-echo-interval 30
+#connect-delay 5000
+#ms-dns $DNS_SRV1
+#EOF
 
 # Create VPN credentials
-cat > /etc/ppp/chap-secrets <<EOF
-"$VPN_USER" l2tpd "$VPN_PASSWORD" *
-EOF
+#cat > /etc/ppp/chap-secrets <<EOF
+#"$VPN_USER" l2tpd "$VPN_PASSWORD" *
+#EOF
 
-VPN_PASSWORD_ENC=$(openssl passwd -1 "$VPN_PASSWORD")
-cat > /etc/ipsec.d/passwd <<EOF
-$VPN_USER:$VPN_PASSWORD_ENC:xauth-psk
-EOF
+#VPN_PASSWORD_ENC=$(openssl passwd -1 "$VPN_PASSWORD")
+#cat > /etc/ipsec.d/passwd <<EOF
+#$VPN_USER:$VPN_PASSWORD_ENC:xauth-psk
+#EOF
 
 # Update sysctl settings
 SYST='/sbin/sysctl -e -q -w'
@@ -322,5 +322,5 @@ EOF
 mkdir -p /run/pluto /var/run/pluto /var/run/xl2tpd
 rm -f /run/pluto/pluto.pid /var/run/pluto/pluto.pid /var/run/xl2tpd.pid
 
-/usr/local/sbin/ipsec start
-exec /usr/sbin/xl2tpd -D -c /etc/xl2tpd/xl2tpd.conf
+exec /usr/local/sbin/ipsec start -D
+#exec /usr/sbin/xl2tpd -D -c /etc/xl2tpd/xl2tpd.conf
